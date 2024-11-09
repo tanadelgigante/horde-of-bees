@@ -1,57 +1,38 @@
 import os
+import time
 import requests
 from datetime import datetime
 from feedgen.feed import FeedGenerator
 import json
 
-# Leggi il token di accesso
-def get_access_token():
-    if os.path.exists("access_token.txt"):
-        with open("access_token.txt", "r") as f:
-            return f.read().strip()
-    return None
+# Attendere fino a quando il token di accesso non è disponibile
+while not os.path.exists("/shared/access_token.txt") or os.stat("/shared/access_token.txt").st_size == 0:
+    print("In attesa che il token di accesso venga generato...")
+    time.sleep(5)
 
-API_TOKEN = get_access_token()
+# Leggere il token di accesso
+with open("/shared/access_token.txt", "r") as f:
+    API_TOKEN = f.read().strip()
 
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
 OUTPUT_FILE = os.getenv("OUTPUT_FILE")
 
 def get_foursquare_checkins(limit=50, offset=0):
-    """
-    Fetch the latest check-ins from the Foursquare/Swarm API.
-    
-    Parameters:
-    limit (int): Maximum number of check-ins to retrieve
-    offset (int): Offset to start retrieving check-ins from
-    
-    Returns:
-    list: List of check-in data
-    """
     url = f"https://api.foursquare.com/v2/users/self/checkins"
-    headers = {
-        "Authorization": f"Bearer {API_TOKEN}",
-        "Accept": "application/json"
-    }
     params = {
+        "oauth_token": API_TOKEN,
         "v": datetime.now().strftime("%Y%m%d"),
         "limit": limit,
         "offset": offset
     }
     
-    response = requests.get(url, headers=headers, params=params)
+    response = requests.get(url, params=params)
     response.raise_for_status()
     
     return response.json()["response"]["checkins"]["items"]
 
 def publish_checkins(checkins, output_format):
-    """
-    Publish the check-in data in the specified output format (RSS or JSON).
-    
-    Parameters:
-    checkins (list): List of check-in data
-    output_format (str): Output format ("rss" or "json")
-    """
     if output_format == "rss":
         feed = FeedGenerator()
         feed.title("Foursquare Check-ins")

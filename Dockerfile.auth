@@ -1,0 +1,16 @@
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy the scripts
+COPY foursquare_auth_server.py .
+
+# Install dependencies
+RUN pip install --no-cache-dir requests flask
+
+# Expose the port
+EXPOSE 8000
+
+# Run the authentication server
+CMD ["python", "foursquare_auth_server.py"]

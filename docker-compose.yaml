@@ -1,12 +1,45 @@
+#services:
+#  horde-auth:
+#    build: ./auth_server
+#    ports:
+##    ports:
+#      - "7777:8000" # Porta per il server di autenticazione 
+#    environment:
+#      FOURSQUARE_CLIENT_ID: EFV05TO0CPVRBFKGMKLMIF1DSP5G5DNDAMCYST0NQIUSUQLA
+##      FOURSQUARE_CLIENT_ID: EFV05TO0CPVRBFKGMKLMIF1DSP5G5DNDAMCYST0NQIUSUQLA
+#      FOURSQUARE_CLIENT_SECRET: WZUYLOJ1HKF0RYET033BMFL2MZECJI5GKSPR5EFZ035OZIVU
+#      API_TOKEN: fsq3OTMfijDsU2YgrO1fCVR2gPS7FiQxPJWE8l40kfAEo9o= ##SERVICE RDVXAFVKQZMG3XCBIBX4PPKPIEFGRC2H3KDH3WSCRWDVCGN0
+#      OUTPUT_FORMAT: rss
+##      OUTPUT_FORMAT: rss
+#      OUTPUT_FILE: /app/check_ins.xml
+      
 services:
-  horde:
-    build: .
+  horde-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
     ports:
-      - "7777:8000" # Porta per il server di autenticazione 
-      - "7778:8080" # Porta per il server RSS
+      - "7777:8000"  # Porta per il server di autenticazione
     environment:
       FOURSQUARE_CLIENT_ID: EFV05TO0CPVRBFKGMKLMIF1DSP5G5DNDAMCYST0NQIUSUQLA
       FOURSQUARE_CLIENT_SECRET: WZUYLOJ1HKF0RYET033BMFL2MZECJI5GKSPR5EFZ035OZIVU
-      API_TOKEN: fsq3OTMfijDsU2YgrO1fCVR2gPS7FiQxPJWE8l40kfAEo9o= ##SERVICE RDVXAFVKQZMG3XCBIBX4PPKPIEFGRC2H3KDH3WSCRWDVCGN0
+      REDIRECT_URI: http://localhost:7777/callback
+    volumes:
+      - shared:/shared
+
+  horde-rss:
+    build:
+      context: .
+      dockerfile: Dockerfile.rss
+    ports:
+      - "7778:8080"  # Porta per il server RSS
+    environment:
       OUTPUT_FORMAT: rss
       OUTPUT_FILE: /app/check_ins.xml
+    volumes:
+      - shared:/shared
+
+volumes:
+  shared:
+
+      

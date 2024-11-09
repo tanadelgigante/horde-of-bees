@@ -1,16 +1,17 @@
 from flask import Flask, request, redirect
-import requests  
+import requests
 import os
 
 app = Flask(__name__)
 
 FOURSQUARE_CLIENT_ID = os.getenv("FOURSQUARE_CLIENT_ID")
 FOURSQUARE_CLIENT_SECRET = os.getenv("FOURSQUARE_CLIENT_SECRET")
-REDIRECT_URI = "http://localhost:8000/callback"
+REDIRECT_URI = os.getenv("REDIRECT_URI")  # URI di reindirizzamento configurato come variabile d'ambiente
 
 @app.route('/')
 def home():
-    return 'Foursquare OAuth 2.0'
+    auth_url = f"https://foursquare.com/oauth2/authenticate?client_id={FOURSQUARE_CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}"
+    return f"Please visit the following URL and authorize the application:<br><a href='{auth_url}'>{auth_url}</a>"
 
 @app.route('/callback')
 def callback():
@@ -20,12 +21,12 @@ def callback():
     token = response.json().get('access_token')
     if token:
         save_token(token)
-        return f"Access Token: {token}"
+        return "Access Token saved. You can close this window."
     else:
         return "Failed to obtain access token."
 
 def save_token(token):
-    with open("access_token.txt", "w") as f:
+    with open("/shared/access_token.txt", "w") as f:  # Salva il token nella cartella condivisa
         f.write(token)
 
 if __name__ == '__main__':

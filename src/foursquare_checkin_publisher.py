@@ -4,17 +4,18 @@ from datetime import datetime
 from feedgen.feed import FeedGenerator
 import json
 
-# Foursquare API credentials from environment variables 
-FOURSQUARE_CLIENT_ID = os.getenv("FOURSQUARE_CLIENT_ID") 
-FOURSQUARE_CLIENT_SECRET = os.getenv("FOURSQUARE_CLIENT_SECRET")
+# Leggi il token di accesso
+def get_access_token():
+    if os.path.exists("access_token.txt"):
+        with open("access_token.txt", "r") as f:
+            return f.read().strip()
+    return None
+
+API_TOKEN = get_access_token()
 
 # Output settings
-OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT") 
+OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
 OUTPUT_FILE = os.getenv("OUTPUT_FILE")
-
-# Endpoint e Token
-API_ENDPOINT = "https://api.foursquare.com/v2/users/self/checkins"
-API_TOKEN = os.getenv("FOURSQUARE_API_TOKEN")
 
 def get_foursquare_checkins(limit=50, offset=0):
     """
@@ -27,14 +28,12 @@ def get_foursquare_checkins(limit=50, offset=0):
     Returns:
     list: List of check-in data
     """
-    url = API_ENDPOINT
+    url = f"https://api.foursquare.com/v2/users/self/checkins"
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
         "Accept": "application/json"
     }
     params = {
-        "client_id": FOURSQUARE_CLIENT_ID,
-        "client_secret": FOURSQUARE_CLIENT_SECRET,
         "v": datetime.now().strftime("%Y%m%d"),
         "limit": limit,
         "offset": offset

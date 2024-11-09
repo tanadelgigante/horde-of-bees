@@ -7,17 +7,10 @@ WORKDIR /app
 COPY src/foursquare_checkin_publisher.py .
 
 # Install dependencies
-RUN pip install --no-cache-dir requests datetime feedgen json 
-
-# Set environment variables
-ENV FOURSQUARE_CLIENT_ID=your_client_id
-ENV FOURSQUARE_CLIENT_SECRET=your_client_secret 
-ENV OUTPUT_FORMAT=rss
-ENV OUTPUT_FILE=/app/check_ins.xml
-ENV PORT=8080
+RUN pip install --no-cache-dir requests feedgen 
 
 # Expose the port
-EXPOSE $PORT
+EXPOSE 8080
 
 # Run the script
 CMD ["python", "foursquare_checkin_publisher.py"]

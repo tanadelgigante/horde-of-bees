@@ -13,6 +13,12 @@ FOURSQUARE_CLIENT_SECRET = os.getenv("FOURSQUARE_CLIENT_SECRET")
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT") 
 OUTPUT_FILE = os.getenv("OUTPUT_FILE") 
 
+# Print environment variables for debugging 
+print("FOURSQUARE_CLIENT_ID:", FOURSQUARE_CLIENT_ID) 
+print("FOURSQUARE_CLIENT_SECRET:", FOURSQUARE_CLIENT_SECRET) 
+print("OUTPUT_FORMAT:", OUTPUT_FORMAT) 
+print("OUTPUT_FILE:", OUTPUT_FILE)
+
 def get_foursquare_checkins(limit=50, offset=0):
     """
     Fetch the latest check-ins from the Foursquare/Swarm API.

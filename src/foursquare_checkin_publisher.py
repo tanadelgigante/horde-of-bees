@@ -2,7 +2,6 @@ import os
 import requests
 from datetime import datetime
 from feedgen.feed import FeedGenerator
-
 import json
 
 # Foursquare API credentials from environment variables 
@@ -11,13 +10,11 @@ FOURSQUARE_CLIENT_SECRET = os.getenv("FOURSQUARE_CLIENT_SECRET")
 
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT") 
-OUTPUT_FILE = os.getenv("OUTPUT_FILE") 
+OUTPUT_FILE = os.getenv("OUTPUT_FILE")
 
-# Print environment variables for debugging 
-print("FOURSQUARE_CLIENT_ID:", FOURSQUARE_CLIENT_ID) 
-print("FOURSQUARE_CLIENT_SECRET:", FOURSQUARE_CLIENT_SECRET) 
-print("OUTPUT_FORMAT:", OUTPUT_FORMAT) 
-print("OUTPUT_FILE:", OUTPUT_FILE)
+# Endpoint e Token
+API_ENDPOINT = "https://api.foursquare.com/v2/users/self/checkins"
+API_TOKEN = os.getenv("FOURSQUARE_API_TOKEN")
 
 def get_foursquare_checkins(limit=50, offset=0):
     """
@@ -30,7 +27,11 @@ def get_foursquare_checkins(limit=50, offset=0):
     Returns:
     list: List of check-in data
     """
-    url = f"https://api.foursquare.com/v2/users/self/checkins"
+    url = API_ENDPOINT
+    headers = {
+        "Authorization": f"Bearer {API_TOKEN}",
+        "Accept": "application/json"
+    }
     params = {
         "client_id": FOURSQUARE_CLIENT_ID,
         "client_secret": FOURSQUARE_CLIENT_SECRET,
@@ -39,7 +40,7 @@ def get_foursquare_checkins(limit=50, offset=0):
         "offset": offset
     }
     
-    response = requests.get(url, params=params)
+    response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
     
     return response.json()["response"]["checkins"]["items"]
@@ -62,8 +63,8 @@ def publish_checkins(checkins, output_format):
             entry = feed.add_entry()
             entry.title(checkin["venue"]["name"])
             entry.link({"href": f"https://foursquare.com/user/{checkin['user']['id']}/checkin/{checkin['id']}"})
-            entry.description(checkin["shout"])
-            entry.published(checkin["createdAt"])
+            entry.description(checkin.get("shout", ""))
+            entry.published(datetime.utcfromtimestamp(checkin["createdAt"]))
             entry.lat(checkin["venue"]["location"]["lat"])
             entry.lon(checkin["venue"]["location"]["lng"])
             if "photos" in checkin and checkin["photos"]["count"] > 0:

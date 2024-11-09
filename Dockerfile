@@ -7,7 +7,7 @@ WORKDIR /app
 COPY src/foursquare_checkin_publisher.py .
 
 # Install dependencies
-RUN pip install --no-cache-dir os requests datetime feedgen.feed json 
+RUN pip install --no-cache-dir os requests datetime feedgen json 
 
 # Set environment variables
 ENV FOURSQUARE_CLIENT_ID=your_client_id

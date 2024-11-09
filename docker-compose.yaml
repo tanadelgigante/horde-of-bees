@@ -2,7 +2,6 @@ services:
   horde:
     build: .
     ports:
-      ports: 
       - "7777:8000" # Porta per il server di autenticazione 
       - "7778:8080" # Porta per il server RSS
     environment:

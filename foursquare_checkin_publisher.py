@@ -52,10 +52,8 @@ def publish_checkins(checkins, output_format):
             if 'createdAt' in checkin:
                 entry.published(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))  # Aggiungi informazioni sul fuso orario
             if 'venue' in checkin and 'location' in checkin['venue']:
-                if 'lat' in checkin['venue']['location']:
-                    entry.lat(checkin['venue']['location']['lat'])
-                if 'lng' in checkin['venue']['location']:
-                    entry.lon(checkin['venue']['location']['lng'])
+                if 'lat' in checkin['venue']['location'] and 'lng' in checkin['venue']['location']:
+                    entry.geo((checkin['venue']['location']['lat'], checkin['venue']['location']['lng']))
             if "photos" in checkin and checkin["photos"]["count"] > 0:
                 entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
         

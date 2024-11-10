@@ -94,4 +94,4 @@ if __name__ == '__main__':
         sys.exit()
     
     threading.Thread(target=update_feed_regularly).start()
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8000)

@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
-OUTPUT_FILE = os.getenv("OUTPUT_FILE")
+OUTPUT_FILE = "/shared/check_ins.xml"  # Salva il file nella cartella condivisa
 SERVER_URL = os.getenv("SERVER_URL")
 TOKEN_FILE_PATH = "/shared/access_token.txt"
 
@@ -41,7 +41,7 @@ def generate_rss_feed():
     checkins = get_foursquare_checkins()
     feed = FeedGenerator()
     feed.title("Foursquare Check-ins")
-    feed.link({"href": SERVER_URL})  # Usa l'indirizzo del server
+    feed.link(href=SERVER_URL, rel='alternate')  # Usa SERVER_URL dalla variabile d'ambiente
     feed.description("Latest check-ins from Foursquare/Swarm")
     
     for checkin in checkins:
@@ -62,8 +62,15 @@ def generate_rss_feed():
             entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
         if description:
             entry.description(description)
+
+    # Genera il feed RSS e aggiungi l'intestazione richiesta
+    rss_feed = feed.rss_str(pretty=True)
+    rss_feed = rss_feed.decode('utf-8')
+    rss_feed = rss_feed.replace('<rss ', '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">', 1)
+
+    with open(OUTPUT_FILE, 'w') as f:
+        f.write(rss_feed)
     
-    feed.rss_file(OUTPUT_FILE)
     print(f"RSS feed updated at {datetime.now()}")
 
 @app.route('/rss')

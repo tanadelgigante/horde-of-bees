@@ -1,16 +1,22 @@
+# Usa l'immagine base python:3.9-slim
 FROM python:3.9-slim
 
-# Set working directory
+# Imposta la directory di lavoro
 WORKDIR /app
 
-# Copy the scripts
+# Copia gli script e il file di manifest nella directory di lavoro
 COPY foursquare_checkin_publisher.py .
+COPY manifest.json .
 
-# Install dependencies
+# Crea la directory static e copia il file CSS
+RUN mkdir -p static
+COPY static/horde.css static/
+
+# Installa le dipendenze necessarie
 RUN pip install --no-cache-dir requests feedgen flask
 
-# Expose the port
+# Espone la porta 8000
 EXPOSE 8000
 
-# Run the RSS publisher
+# Comando per eseguire il server RSS
 CMD ["python", "foursquare_checkin_publisher.py"]

@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, send_file, url_for
 import requests
 import os
 import time
@@ -6,15 +6,26 @@ from datetime import datetime, timezone
 from feedgen.feed import FeedGenerator
 import threading
 import re
+import json
+from io import BytesIO
 
 app = Flask(__name__)
 
-# Output settings
+# Carica nome e versione dal file manifest.json
+with open('manifest.json') as f:
+    manifest = json.load(f)
+    APP_NAME = manifest.get("name") + " - RSS Server"
+    APP_VERSION = manifest.get("version")
+
+print(f"Starting {APP_NAME} version {APP_VERSION}")
+
+# Impostazioni di output
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
 OUTPUT_FILE = "/shared/check_ins.xml"  # Salva il file nella cartella condivisa
 SERVER_URL = os.getenv("SERVER_URL")
 TOKEN_FILE_PATH = "/shared/access_token.txt"
 
+# Funzione per leggere il token di accesso
 def read_token():
     while not os.path.exists(TOKEN_FILE_PATH) or os.stat(TOKEN_FILE_PATH).st_size == 0:
         print("In attesa che il token di accesso venga generato...")
@@ -22,8 +33,10 @@ def read_token():
     with open(TOKEN_FILE_PATH, "r") as f:
         return f.read().strip()
 
+# Leggi il token di accesso
 API_TOKEN = read_token()
 
+# Funzione per recuperare i check-in da Foursquare
 def get_foursquare_checkins(limit=50, offset=0):
     url = f"https://api.foursquare.com/v2/users/self/checkins"
     params = {
@@ -38,7 +51,9 @@ def get_foursquare_checkins(limit=50, offset=0):
     
     return response.json()["response"]["checkins"]["items"]
 
+# Funzione per generare il feed RSS
 def generate_rss_feed():
+    print("Generating RSS feed...")
     checkins = get_foursquare_checkins()
     feed = FeedGenerator()
     feed.title("Foursquare Check-ins")
@@ -73,6 +88,52 @@ def generate_rss_feed():
         f.write(rss_feed)
     
     print(f"RSS feed updated at {datetime.now()}")
+    return rss_feed
+
+@app.route('/')
+def home():
+    # Genera il feed RSS e restituiscilo
+    rss_feed = generate_rss_feed()
+    return f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{APP_NAME}</title>
+        <link rel="stylesheet" href="{url_for('static', filename='horde.css')}">
+        <style>
+            pre {{
+                background-color: #f8f8f8;
+                padding: 10px;
+                border: 1px solid #ddd;
+                overflow-x: auto;
+            }}
+            .icon {{
+                margin-right: 5px;
+            }}
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>{APP_NAME}</h1>
+        </header>
+        <div class="container">
+            <pre>{rss_feed}</pre>
+            <br>
+            <a href="{url_for('download_rss')}" class="button">
+                <span class="icon">&#128229;</span> Download RSS
+            </a>
+            <a href="{SERVER_URL}" class="button">
+                <span class="icon">&#128240;</span> Subscribe to RSS
+            </a>
+        </div>
+        <footer>
+            <p>&copy; {datetime.now().year} {APP_NAME}</p>
+        </footer>
+    </body>
+    </html>
+    """
 
 @app.route('/rss')
 @app.route('/rss/')
@@ -81,12 +142,17 @@ def serve_rss_feed():
         rss_feed = f.read()
     return Response(rss_feed, mimetype='application/rss+xml')
 
+@app.route('/download')
+def download_rss():
+    return send_file(OUTPUT_FILE, as_attachment=True, attachment_filename='check_ins.xml')
+
 def update_feed_regularly():
     while True:
         generate_rss_feed()
         time.sleep(1800)  # Attendere 30 minuti (1800 secondi) prima del prossimo aggiornamento
 
 if __name__ == '__main__':
+    print(f"Starting {APP_NAME} v{APP_VERSION}")
     if os.path.exists(TOKEN_FILE_PATH) and os.stat(TOKEN_FILE_PATH).st_size > 0:
         API_TOKEN = read_token()
     else:

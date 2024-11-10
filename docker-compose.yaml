@@ -19,10 +19,10 @@ services:
       context: .
       dockerfile: Dockerfile.rss
     ports:
-      - "7778:8080"  # Porta per il server RSS
+      - "7778:8000"  # Porta per il server RSS
     environment:
       OUTPUT_FORMAT: rss
-      OUTPUT_FILE: /app/check_ins.xml
+      OUTPUT_FILE: /shared/check_ins.xml
       SERVER_URL: http://dun-srv-app:7778
     volumes:
       - horde-data:/shared

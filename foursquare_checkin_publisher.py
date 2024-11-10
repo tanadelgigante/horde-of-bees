@@ -1,24 +1,27 @@
+from flask import Flask, request, Response
+import requests
 import os
 import time
-import requests
 from datetime import datetime, timezone
 from feedgen.feed import FeedGenerator
-import json
+import threading
 
-# Leggere il token di accesso
-def read_token():
-    while not os.path.exists("/shared/access_token.txt") or os.stat("/shared/access_token.txt").st_size == 0:
-        print("In attesa che il token di accesso venga generato...")
-        time.sleep(5)
-    with open("/shared/access_token.txt", "r") as f:
-        return f.read().strip()
-
-API_TOKEN = read_token()
+app = Flask(__name__)
 
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
 OUTPUT_FILE = os.getenv("OUTPUT_FILE")
-SERVER_URL = os.getenv("SERVER_URL")  # Aggiungi l'indirizzo del server come variabile d'ambiente
+SERVER_URL = os.getenv("SERVER_URL")
+TOKEN_FILE_PATH = "/shared/access_token.txt"
+
+def read_token():
+    while not os.path.exists(TOKEN_FILE_PATH) or os.stat(TOKEN_FILE_PATH).st_size == 0:
+        print("In attesa che il token di accesso venga generato...")
+        time.sleep(5)
+    with open(TOKEN_FILE_PATH, "r") as f:
+        return f.read().strip()
+
+API_TOKEN = read_token()
 
 def get_foursquare_checkins(limit=50, offset=0):
     url = f"https://api.foursquare.com/v2/users/self/checkins"
@@ -34,52 +37,53 @@ def get_foursquare_checkins(limit=50, offset=0):
     
     return response.json()["response"]["checkins"]["items"]
 
-def publish_checkins(checkins, output_format):
-    if output_format == "rss":
-        feed = FeedGenerator()
-        feed.title("Foursquare Check-ins")
-        feed.link({"href": SERVER_URL})  # Usa l'indirizzo del server
-        feed.description("Latest check-ins from Foursquare/Swarm")
-        
-        for checkin in checkins:
-            entry = feed.add_entry()
-            if 'venue' in checkin and 'name' in checkin['venue']:
-                entry.title(checkin['venue']['name'])
-            if 'venue' in checkin and 'id' in checkin['venue']:
-                entry.link({"href": f"https://foursquare.com/v/{checkin['venue']['id']}"})
-            if 'shout' in checkin:
-                entry.description(checkin['shout'])
-            if 'createdAt' in checkin:
-                entry.published(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))  # Aggiungi informazioni sul fuso orario
-            if 'venue' in checkin and 'location' in checkin['venue']:
-                if 'lat' in checkin['venue']['location'] and 'lng' in checkin['venue']['location']:
-                    entry.extension.add_element('geo:lat', {}, str(checkin['venue']['location']['lat']))
-                    entry.extension.add_element('geo:long', {}, str(checkin['venue']['location']['lng']))
-            if "photos" in checkin and checkin["photos"]["count"] > 0:
-                entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
-        
-        feed.rss_file(OUTPUT_FILE)
-    elif output_format == "json":
-        for checkin in checkins:
-            if 'venue' in checkin and 'location' in checkin['venue']:
-                if 'lat' in checkin['venue']['location']:
-                    checkin["venue"]["location"]["latitude"] = checkin["venue"]["location"]["lat"]
-                if 'lng' in checkin['venue']['location']:
-                    checkin["venue"]["location"]["longitude"] = checkin["venue"]["location"]["lng"]
-            if "photos" in checkin and checkin["photos"]["count"] > 0:
-                checkin["photo_url"] = checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]
-        
-        with open(OUTPUT_FILE, "w") as f:
-            json.dump(checkins, f, indent=2)
-    else:
-        raise ValueError("Invalid output format. Use 'rss' or 'json'.")
+def generate_rss_feed():
+    checkins = get_foursquare_checkins()
+    feed = FeedGenerator()
+    feed.title("Foursquare Check-ins")
+    feed.link({"href": SERVER_URL})  # Usa l'indirizzo del server
+    feed.description("Latest check-ins from Foursquare/Swarm")
+    
+    for checkin in checkins:
+        entry = feed.add_entry()
+        if 'venue' in checkin and 'name' in checkin['venue']:
+            entry.title(checkin['venue']['name'])
+        if 'venue' in checkin and 'id' in checkin['venue']:
+            entry.link({"href": f"https://foursquare.com/v/{checkin['venue']['id']}"})
+        if 'shout' in checkin:
+            entry.description(checkin['shout'])
+        description = ""
+        if 'createdAt' in checkin:
+            entry.published(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))  # Aggiungi informazioni sul fuso orario
+        if 'venue' in checkin and 'location' in checkin['venue']:
+            if 'lat' in checkin['venue']['location'] and 'lng' in checkin['venue']['location']:
+                description += f"Lat: {checkin['venue']['location']['lat']}, Lon: {checkin['venue']['location']['lng']}"
+        if "photos" in checkin and checkin["photos"]["count"] > 0:
+            entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
+        if description:
+            entry.description(description)
+    
+    feed.rss_file(OUTPUT_FILE)
+    print(f"RSS feed updated at {datetime.now()}")
 
-def main():
+@app.route('/rss')
+@app.route('/rss/')
+def serve_rss_feed():
+    with open(OUTPUT_FILE, 'r') as f:
+        rss_feed = f.read()
+    return Response(rss_feed, mimetype='application/rss+xml')
+
+def update_feed_regularly():
     while True:
-        checkins = get_foursquare_checkins()
-        publish_checkins(checkins, OUTPUT_FORMAT)
-        print(f"Check-ins published to {OUTPUT_FILE}")
+        generate_rss_feed()
         time.sleep(1800)  # Attendere 30 minuti (1800 secondi) prima del prossimo aggiornamento
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    if os.path.exists(TOKEN_FILE_PATH) and os.stat(TOKEN_FILE_PATH).st_size > 0:
+        API_TOKEN = read_token()
+    else:
+        print("Token non trovato, arresto del server.")
+        sys.exit()
+    
+    threading.Thread(target=update_feed_regularly).start()
+    app.run(host='0.0.0.0', port=8000)

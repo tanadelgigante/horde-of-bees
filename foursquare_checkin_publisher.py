@@ -14,10 +14,10 @@ app = Flask(__name__)
 # Carica nome e versione dal file manifest.json
 with open('manifest.json') as f:
     manifest = json.load(f)
-    APP_NAME = manifest.get("name") + " - RSS Server"
+    APP_NAME = manifest.get("name")
     APP_VERSION = manifest.get("version")
 
-print(f"Starting {APP_NAME} version {APP_VERSION}")
+print(f"Starting {APP_NAME} - RSS Server version {APP_VERSION}")
 
 # Impostazioni di output
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
@@ -56,29 +56,29 @@ def generate_rss_feed():
     print("Generating RSS feed...")
     checkins = get_foursquare_checkins()
     feed = FeedGenerator()
-    feed.title("Foursquare Check-ins")
-    feed.link(href=SERVER_URL, rel='alternate')  # Usa SERVER_URL dalla variabile d'ambiente
-    feed.description("Latest check-ins from Foursquare/Swarm")
-    
+    feed.title("Latest check-ins from Foursquare/Swarm")
+    feed.link(href=SERVER_URL, rel='self')
+    feed.description("This is the RSS feed of latest check-ins from Foursquare/Swarm.")
+    feed.generator("python-feedgen")
+    feed.pubDate(datetime.now(timezone.utc))
+
     for checkin in checkins:
         entry = feed.add_entry()
         if 'venue' in checkin and 'name' in checkin['venue']:
-            entry.title(checkin['venue']['name'])
+            entry.title("Check-in: " + checkin['venue']['name'])
         if 'venue' in checkin and 'id' in checkin['venue']:
-            entry.link({"href": f"https://foursquare.com/v/{checkin['venue']['id']}"})
+            entry.link(href=f"https://foursquare.com/v/{checkin['venue']['id']}")
         if 'shout' in checkin:
             entry.description(checkin['shout'])
         description = ""
         if 'createdAt' in checkin:
-            entry.published(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))  # Aggiungi informazioni sul fuso orario
+            entry.pubDate(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))
         if 'venue' in checkin and 'location' in checkin['venue']:
             if 'lat' in checkin['venue']['location'] and 'lng' in checkin['venue']['location']:
-                description += f"Lat: {checkin['venue']['location']['lat']}, Lon: {checkin['venue']['location']['lng']}"
-        if "photos" in checkin and checkin["photos"]["count"] > 0:
-            entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
+                description += f"Coordinates: ({checkin['venue']['location']['lat']}, {checkin['venue']['location']['lng']})"
         if description:
             entry.description(description)
-
+    
     # Genera il feed RSS e sostituisci l'intera riga con l'intestazione richiesta
     rss_feed = feed.rss_str(pretty=True)
     rss_feed = rss_feed.decode('utf-8')
@@ -94,6 +94,23 @@ def generate_rss_feed():
 def home():
     # Genera il feed RSS e restituiscilo
     rss_feed = generate_rss_feed()
+    rss_display = ""
+    for entry in re.findall(r'<item>(.*?)</item>', rss_feed, re.DOTALL):
+        title = re.search(r'<title>(.*?)</title>', entry).group(1)
+        link = re.search(r'<link>(.*?)</link>', entry).group(1)
+        description = re.search(r'<description>(.*?)</description>', entry).group(1)
+        pubDate = re.search(r'<pubDate>(.*?)</pubDate>', entry).group(1)
+        rss_display += f"""
+        <div class="rss-entry">
+            <h3>{title}</h3>
+            <p><a href="{link}">{link}</a></p>
+            <p>{description}</p>
+            <p>When: {pubDate}</p>
+        </div>
+        <hr>
+        """
+    server_info = f"Server: {SERVER_URL}<br>Created by: python-feedgen<br>Update: {datetime.now().strftime('%a, %d %b %Y %H:%M')}"
+
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -112,6 +129,9 @@ def home():
             .icon {{
                 margin-right: 5px;
             }}
+            .rss-entry {{
+                margin-bottom: 20px;
+            }}
         </style>
     </head>
     <body>
@@ -119,8 +139,9 @@ def home():
             <h1>{APP_NAME}</h1>
         </header>
         <div class="container">
-            <pre>{rss_feed}</pre>
-            <br>
+            <h2>Latest check-ins from Foursquare/Swarm</h2>
+            <p>{server_info}</p>
+            {rss_display}
             <a href="{url_for('download_rss')}" class="button">
                 <span class="icon">&#128229;</span> Download RSS
             </a>

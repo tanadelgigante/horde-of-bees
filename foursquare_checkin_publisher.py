@@ -1,18 +1,19 @@
 import os
 import time
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from feedgen.feed import FeedGenerator
 import json
 
-# Attendere fino a quando il token di accesso non è disponibile
-while not os.path.exists("/shared/access_token.txt") or os.stat("/shared/access_token.txt").st_size == 0:
-    print("In attesa che il token di accesso venga generato...")
-    time.sleep(5)
-
 # Leggere il token di accesso
-with open("/shared/access_token.txt", "r") as f:
-    API_TOKEN = f.read().strip()
+def read_token():
+    while not os.path.exists("/shared/access_token.txt") or os.stat("/shared/access_token.txt").st_size == 0:
+        print("In attesa che il token di accesso venga generato...")
+        time.sleep(5)
+    with open("/shared/access_token.txt", "r") as f:
+        return f.read().strip()
+
+API_TOKEN = read_token()
 
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
@@ -49,7 +50,7 @@ def publish_checkins(checkins, output_format):
             if 'shout' in checkin:
                 entry.description(checkin['shout'])
             if 'createdAt' in checkin:
-                entry.published(datetime.utcfromtimestamp(checkin['createdAt']))
+                entry.published(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))  # Aggiungi informazioni sul fuso orario
             if 'venue' in checkin and 'location' in checkin['venue']:
                 if 'lat' in checkin['venue']['location']:
                     entry.lat(checkin['venue']['location']['lat'])
@@ -75,9 +76,11 @@ def publish_checkins(checkins, output_format):
         raise ValueError("Invalid output format. Use 'rss' or 'json'.")
 
 def main():
-    checkins = get_foursquare_checkins()
-    publish_checkins(checkins, OUTPUT_FORMAT)
-    print(f"Check-ins published to {OUTPUT_FILE}")
+    while True:
+        checkins = get_foursquare_checkins()
+        publish_checkins(checkins, OUTPUT_FORMAT)
+        print(f"Check-ins published to {OUTPUT_FILE}")
+        time.sleep(1800)  # Attendere 30 minuti (1800 secondi) prima del prossimo aggiornamento
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,8 @@
-# Hoard of Bees - RSS & Auth Servers
+# Horde of Bees - RSS & Auth Servers
 
 ## Descrizione
 
-Hoard of Bees è un'applicazione composta da due server: un server di autenticazione e un server RSS. Il server di autenticazione gestisce l'autenticazione tramite Foursquare e il server RSS genera e serve un feed RSS basato sui check-in di Foursquare.
+Horde of Bees è un'applicazione composta da due server: un server di autenticazione e un server RSS. Il server di autenticazione gestisce l'autenticazione tramite Foursquare e il server RSS genera e serve un feed RSS basato sui check-in di Foursquare.
 
 ## Requisiti
 
@@ -14,8 +14,8 @@ Hoard of Bees è un'applicazione composta da due server: un server di autenticaz
 1. Clona il repository:
 
     ```sh
-    git clone https://github.com/username/HoardOfBees.git
-    cd HoardOfBees
+    git clone https://github.com/username/HordeOfBees.git
+    cd HordeOfBees
     ```
 
 2. Crea un file `.env` nella directory principale del progetto e aggiungi le seguenti variabili d'ambiente:
@@ -53,11 +53,11 @@ Questo componente non è affiliato né correlato agli sviluppatori di Foursquare
 
 ---
 
-# Hoard of Bees - RSS & Auth Servers
+# Horde of Bees - RSS & Auth Servers
 
 ## Description
 
-Hoard of Bees is an application composed of two servers: an authentication server and an RSS server. The authentication server handles authentication via Foursquare, and the RSS server generates and serves an RSS feed based on Foursquare check-ins.
+Horde of Bees is an application composed of two servers: an authentication server and an RSS server. The authentication server handles authentication via Foursquare, and the RSS server generates and serves an RSS feed based on Foursquare check-ins.
 
 ## Requirements
 
@@ -69,8 +69,8 @@ Hoard of Bees is an application composed of two servers: an authentication serve
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/username/HoardOfBees.git
-    cd HoardOfBees
+    git clone https://github.com/username/HordeOfBees.git
+    cd HordeOfBees
     ```
 
 2. Create a `.env` file in the project's root directory and add the following environment variables:

@@ -17,6 +17,7 @@ with open("/shared/access_token.txt", "r") as f:
 # Output settings
 OUTPUT_FORMAT = os.getenv("OUTPUT_FORMAT")
 OUTPUT_FILE = os.getenv("OUTPUT_FILE")
+SERVER_URL = os.getenv("SERVER_URL")  # Aggiungi l'indirizzo del server come variabile d'ambiente
 
 def get_foursquare_checkins(limit=50, offset=0):
     url = f"https://api.foursquare.com/v2/users/self/checkins"
@@ -36,25 +37,35 @@ def publish_checkins(checkins, output_format):
     if output_format == "rss":
         feed = FeedGenerator()
         feed.title("Foursquare Check-ins")
-        feed.link({"href": "http://example.com"})
+        feed.link({"href": SERVER_URL})  # Usa l'indirizzo del server
         feed.description("Latest check-ins from Foursquare/Swarm")
         
         for checkin in checkins:
             entry = feed.add_entry()
-            entry.title(checkin["venue"]["name"])
-            entry.link({"href": f"https://foursquare.com/user/{checkin['user']['id']}/checkin/{checkin['id']}"})
-            entry.description(checkin.get("shout", ""))
-            entry.published(datetime.utcfromtimestamp(checkin["createdAt"]))
-            entry.lat(checkin["venue"]["location"]["lat"])
-            entry.lon(checkin["venue"]["location"]["lng"])
+            if 'venue' in checkin and 'name' in checkin['venue']:
+                entry.title(checkin['venue']['name'])
+            if 'venue' in checkin and 'id' in checkin['venue']:
+                entry.link({"href": f"https://foursquare.com/v/{checkin['venue']['id']}"})
+            if 'shout' in checkin:
+                entry.description(checkin['shout'])
+            if 'createdAt' in checkin:
+                entry.published(datetime.utcfromtimestamp(checkin['createdAt']))
+            if 'venue' in checkin and 'location' in checkin['venue']:
+                if 'lat' in checkin['venue']['location']:
+                    entry.lat(checkin['venue']['location']['lat'])
+                if 'lng' in checkin['venue']['location']:
+                    entry.lon(checkin['venue']['location']['lng'])
             if "photos" in checkin and checkin["photos"]["count"] > 0:
                 entry.media({"url": checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]})
         
         feed.rss_file(OUTPUT_FILE)
     elif output_format == "json":
         for checkin in checkins:
-            checkin["venue"]["location"]["latitude"] = checkin["venue"]["location"]["lat"]
-            checkin["venue"]["location"]["longitude"] = checkin["venue"]["location"]["lng"]
+            if 'venue' in checkin and 'location' in checkin['venue']:
+                if 'lat' in checkin['venue']['location']:
+                    checkin["venue"]["location"]["latitude"] = checkin["venue"]["location"]["lat"]
+                if 'lng' in checkin['venue']['location']:
+                    checkin["venue"]["location"]["longitude"] = checkin["venue"]["location"]["lng"]
             if "photos" in checkin and checkin["photos"]["count"] > 0:
                 checkin["photo_url"] = checkin["photos"]["items"][0]["prefix"] + "original" + checkin["photos"]["items"][0]["suffix"]
         

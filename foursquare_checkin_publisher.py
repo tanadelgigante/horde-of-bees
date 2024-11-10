@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timezone
 from feedgen.feed import FeedGenerator
 import threading
+import re
 
 app = Flask(__name__)
 
@@ -63,10 +64,10 @@ def generate_rss_feed():
         if description:
             entry.description(description)
 
-    # Genera il feed RSS e aggiungi l'intestazione richiesta
+    # Genera il feed RSS e sostituisci l'intera riga con l'intestazione richiesta
     rss_feed = feed.rss_str(pretty=True)
     rss_feed = rss_feed.decode('utf-8')
-    rss_feed = rss_feed.replace('<rss ', '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">', 1)
+    rss_feed = re.sub(r'<rss[^>]+>', '<rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">', rss_feed, 1)
 
     with open(OUTPUT_FILE, 'w') as f:
         f.write(rss_feed)
@@ -93,4 +94,4 @@ if __name__ == '__main__':
         sys.exit()
     
     threading.Thread(target=update_feed_regularly).start()
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=8080)

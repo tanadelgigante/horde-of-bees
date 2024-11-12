@@ -1,0 +1,33 @@
+services:
+  horde-auth:
+    container_name: horde-auth
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    ports:
+      - "7777:8000"  # Porta per il server di autenticazione
+    environment:
+      FOURSQUARE_CLIENT_ID: <your_foursquare_client_id>
+      FOURSQUARE_CLIENT_SECRET: <your_foursquare_client_secret>
+      REDIRECT_URI: <your_public_callback_uri>
+    volumes:
+      - horde-data:/shared
+
+  horde-rss:
+    container_name: horde-rss
+    build:
+      context: .
+      dockerfile: Dockerfile.rss
+    ports:
+      - "7778:8000"  # Porta per il server RSS
+    environment:
+      OUTPUT_FORMAT: rss
+      OUTPUT_FILE: /shared/check_ins.xml
+      SERVER_URL: <your_server_url>
+    volumes:
+      - horde-data:/shared
+
+volumes:
+  horde-data:
+
+      

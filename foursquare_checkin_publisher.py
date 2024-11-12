@@ -72,7 +72,10 @@ def generate_rss_feed():
             entry.description(checkin['shout'])
         description = ""
         if 'createdAt' in checkin:
-            entry.pubDate(datetime.fromtimestamp(checkin['createdAt'], timezone.utc))
+            created_at = datetime.fromtimestamp(checkin['createdAt'], timezone.utc) 
+            guid = created_at.isoformat() 
+            entry.guid(guid, permalink=False) 
+            entry.pubdate(created_at)
         if 'venue' in checkin and 'location' in checkin['venue']:
             if 'lat' in checkin['venue']['location'] and 'lng' in checkin['venue']['location']:
                 description += f"Coordinates: ({checkin['venue']['location']['lat']}, {checkin['venue']['location']['lng']})"

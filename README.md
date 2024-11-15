@@ -8,7 +8,7 @@ Horde of Bees è un'applicazione composta da due server: un server di autenticaz
 
 Occorre innanzitutto registrare una nuova App sul sito per sviluppatori di Foursquare (https://it.foursquare.com/developers/home), avrete 200'000 crediti gratis. Qui registrerete la vostra installazione di Horde of Bees e configurerete la parte di autenticazione "OAuth Authentication". Da qui preleverete il FOURSQUARE_CLIENT_ID, il FOURSQUARE_CLIENT_SECRET e imposterete la REDIRECT_URI (le stesse della configurazione qui di seguito).
 Inoltre il vostro server di autenticazione dovrà essere esposto su Internet (perché Fourquare vi dovrà chiamare all'indirizzo di callback) e sarà attivo fintantoché la procedura di autenticazione non sarà conclusa. Successivamente si disattiverà da solo.
-Invece il vostro server RSS potrà anche restare privato e non esposto sulla rete pubblica.
+Invece il vostro server RSS potrà anche restare privato e non esposto sulla rete pubblica. 
 
 ## Requisiti
 
